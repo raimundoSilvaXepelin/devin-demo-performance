@@ -1,9 +1,14 @@
 const Database = require('better-sqlite3');
 
+// Indexed expression for the event's plan; queries must use this exact expression to read it from the index.
+const PLAN_EXPR = "iif(json_valid(props), json_extract(props, '$.plan'), NULL)";
+
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS workspaces (id INTEGER PRIMARY KEY, name TEXT);
   CREATE TABLE IF NOT EXISTS projects (id INTEGER PRIMARY KEY, workspace_id INTEGER, name TEXT);
   CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, project_id INTEGER, name TEXT, user_id INTEGER, ts INTEGER, props TEXT);
+  CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects (workspace_id);
+  CREATE INDEX IF NOT EXISTS idx_events_dashboard ON events (project_id, ts, name, user_id, ${PLAN_EXPR});
 `;
 
 function openDb(file) {
@@ -13,4 +18,4 @@ function openDb(file) {
   return db;
 }
 
-module.exports = { openDb };
+module.exports = { openDb, PLAN_EXPR };
